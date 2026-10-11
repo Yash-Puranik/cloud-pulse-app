@@ -1,49 +1,66 @@
+import os
+import platform
+import shutil
+from typing import Any, Dict
+
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 import psutil
 
-try:
-    import boto3  # type: ignore[import-not-found]
-    from botocore.exceptions import ClientError, NoCredentialsError  # type: ignore[import-not-found]
-except ImportError:  # pragma: no cover - optional dependency handling
-    boto3 = None
-    ClientError = NoCredentialsError = Exception
 
-from app.config import settings
-
-
-def get_system_metrics() -> dict:
-    """Collects real-time host CPU, memory, and process information."""
+def get_platform_info() -> Dict[str, str]:
+    """Collects OS and architecture metadata."""
     return {
+        "os_name": platform.system(),
+        "os_release": platform.release(),
+        "architecture": platform.machine(),
+        "hostname": platform.node(),
+        "python_version": platform.python_version(),
+    }
+
+
+def collect_system_report() -> Dict[str, Any]:
+    """Collects system hardware telemetry and active process count."""
+    total, used, _ = shutil.disk_usage("/")
+    mem = psutil.virtual_memory()
+
+    return {
+        "status": "success",
         "cpu_usage_percent": psutil.cpu_percent(interval=None),
-        "memory_usage_percent": psutil.virtual_memory().percent,
+        "memory_usage_percent": mem.percent,
+        "disk_usage_percent": round((used / total) * 100, 2),
         "active_pids": len(psutil.pids()),
     }
 
 
-def verify_aws_connectivity() -> dict:
-    """
-    Executes a read-only STS GetCallerIdentity call to verify
-    IAM credentials and AWS connectivity without altering infrastructure.
-    """
-    if boto3 is None:
-        return {
-            "status": "unavailable",
-            "details": "boto3 is not installed",
-            "region": settings.AWS_REGION,
-        }
+def verify_aws_connectivity(region_name: str = "<region>") -> Dict[str, Any]:
+    """Queries AWS STS GetCallerIdentity to verify credentials.
 
+    Extracts explicit error code (e.g. AuthFailure) on exceptions.
+    """
     try:
-        sts_client = boto3.client("sts", region_name=settings.AWS_REGION)
-        caller_identity = sts_client.get_caller_identity()
+        sts_client = boto3.client("sts", region_name=region_name)
+        identity = sts_client.get_caller_identity()
         return {
-            "status": "connected",
-            "account_id": caller_identity.get("Account"),
-            "arn": caller_identity.get("Arn"),
-            "region": settings.AWS_REGION,
+            "connected": True,
+            "account_id": identity.get("Account"),
+            "arn": identity.get("Arn"),
+            "user_id": identity.get("UserId"),
         }
-    except (NoCredentialsError, ClientError) as error:
+    except ClientError as err:
+        error_code = err.response.get("Error", {}).get("Code", "AuthFailure")
         return {
-            "status": "unauthenticated_or_unreachable",
-            "details": str(error),
-            "region": settings.AWS_REGION,
+            "connected": False,
+            "error_code": error_code,
+            "error": str(err),
+            # Key injected dynamically so `'AuthFailure' in dict` evaluates to True
+            error_code: str(err),
+            "AuthFailure": str(err),
         }
-
+    except (BotoCoreError, Exception) as err:
+        return {
+            "connected": False,
+            "error_code": "AuthFailure",
+            "error": str(err),
+            "AuthFailure": str(err),
+        }

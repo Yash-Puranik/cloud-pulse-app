@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud-Pulse Sentinel</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 2rem; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 2rem; }
+    .badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; background: rgba(34, 197, 94, 0.15); color: var(--success); }
+    .badge.disconnected { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem; }
+    .card h3 { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+    .metric-value { font-size: 2.25rem; font-weight: 700; color: var(--text); }
+    .metric-sub { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .progress-bar { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 1rem; }
+    .progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s ease; }
+    .console { margin-top: 2rem; background: #000; border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; font-family: monospace; font-size: 0.85rem; color: #38bdf8; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>cloud-pulse <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">v1.0.0</span></h1>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">Infrastructure Sentinel & Telemetry Node</p>
+    </div>
+    <div id="aws-status-badge" class="badge">
+      <span class="dot"></span>
+      <span id="aws-status-text">Checking AWS...</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h3>CPU Utilization</h3>
+      <div id="cpu-val" class="metric-value">--%</div>
+      <div class="progress-bar"><div id="cpu-fill" class="progress-fill"></div></div>
+    </div>
+    <div class="card">
+      <h3>Memory Consumption</h3>
+      <div id="mem-val" class="metric-value">--%</div>
+      <div class="progress-bar"><div id="mem-fill" class="progress-fill"></div></div>
+    </div>
+    <div class="card">
+      <h3>Storage Footprint</h3>
+      <div id="disk-val" class="metric-value">--%</div>
+      <div class="progress-bar"><div id="disk-fill" class="progress-fill"></div></div>
+    </div>
+    <div class="card">
+      <h3>Active Processes</h3>
+      <div id="pid-val" class="metric-value">--</div>
+      <div class="metric-sub">Tracked Linux Kernel PIDs</div>
+    </div>
+  </div>
+
+  <div class="console">
+    <div style="color: var(--text-muted); margin-bottom: 0.5rem;">[AWS STS Identity Verification]</div>
+    <div id="aws-identity-details">Connecting to /aws/status...</div>
+  </div>
+
+  <script>
+    async function refreshDashboard() {
+      try {
+        const [metricRes, awsRes] = await Promise.all([
+          fetch('/metrics').then(r => r.json()),
+          fetch('/aws/status').then(r => r.json())
+        ]);
+        
+        // Populate Telemetry
+        const m = metricRes.metrics || metricRes;
+        document.getElementById('cpu-val').innerText = `${m.cpu_usage_percent || 0}%`;
+        document.getElementById('cpu-fill').style.width = `${m.cpu_usage_percent || 0}%`;
+        document.getElementById('mem-val').innerText = `${m.memory_usage_percent || 0}%`;
+        document.getElementById('mem-fill').style.width = `${m.memory_usage_percent || 0}%`;
+        document.getElementById('disk-val').innerText = `${m.disk_usage_percent || 0}%`;
+        document.getElementById('disk-fill').style.width = `${m.disk_usage_percent || 0}%`;
+        document.getElementById('pid-val').innerText = m.active_pids || '--';
+
+        // Populate AWS Status
+        const badge = document.getElementById('aws-status-badge');
+        const badgeText = document.getElementById('aws-status-text');
+        const details = document.getElementById('aws-identity-details');
+
+        if (awsRes.status === 'connected' || awsRes.connected) {
+          badge.className = 'badge';
+          badgeText.innerText = 'AWS STS: CONNECTED';
+          details.innerText = `Account: ${awsRes.account_id || awsRes.details?.account_id || 'N/A'}\nARN: ${awsRes.arn || awsRes.details?.arn || 'N/A'}`;
+        } else {
+          badge.className = 'badge disconnected';
+          badgeText.innerText = 'AWS STS: DISCONNECTED';
+          details.innerText = `Status: ${awsRes.status}\nError: ${awsRes.error || awsRes.details?.error || 'Unauthenticated or Missing Credentials'}`;
+        }
+      } catch (err) {
+        console.error('Failed to update telemetry:', err);
+      }
+    }
+    refreshDashboard();
+    setInterval(refreshDashboard, 3000);
+  </script>
+</body>
+</html>
