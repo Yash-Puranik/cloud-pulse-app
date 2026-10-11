@@ -37,7 +37,7 @@ done
 
 echo ">>> [STAGE 3/6] Running unit tests via pytest..."
 
-TEST_DIR="tests"
+TEST_DIR="tests/"
 
 pytest "${TEST_DIR}" -v
 
@@ -54,7 +54,6 @@ CONTAINER_NAME="cloud-pulse-app"
 if docker ps -a --format '{{.Names}}' | grep -Eq "^${CONTAINER_NAME}\$"; then
 	echo "Removing and stopping an existing container: ${CONTAINER_NAME}"
 	docker rm -f "${CONTAINER_NAME}" > /dev/null 
-	exit 1
 fi
 
 docker run -d -p "${HOST_PORT}":"${CONT_PORT}" --name "${CONTAINER_NAME}" --read-only --cap-drop=ALL --security-opt=no-new-privileges:true --tmpfs /tmp:rw,noexec,nosuid,size=64m "${IMG_NAME}" > /dev/null
@@ -63,16 +62,27 @@ echo "The container '${CONTAINER_NAME}' has started."
 
 echo ">>> [STAGE 6/6] Verifying service availability at ${HEALTH}..."
 
-ATTEMPTS=1
-SUCCESS=0
 MAX_HEALTH_ATTEMPTS=15
 
-while [ "${ATTEMPTS}" -le "${MAX_HEALTH_ATTEMPTS}" ];do
+
+if ! docker ps --filter "name=^/${CONTAINER_NAME}$" --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  echo "[-] ERROR: Container '${CONTAINER_NAME}' is not running!"
+  echo "[-] Dumping container exit code and logs:"
+  docker ps -a --filter "name=^/${CONTAINER_NAME}$"
+  docker logs "${CONTAINER_NAME}"
+  exit 1
+fi
+
+ATTEMPTS=1
+SUCCESS=0
+
+while [ "${ATTEMPTS}" -le "${MAX_HEALTH_ATTEMPTS}" ]; do
 	http_code=$(curl -s -o /dev/null -w "%{http_code}" "${HEALTH}") 
 
 	if [ "${http_code}" -eq 200 ]; then
 		echo "SUCCESS: Service is healthy (HTTP 200) after ${ATTEMPTS} attempt(s)!"
 		SUCCESS=1
+		break
 	else
 		echo "FAIL: Service is not healthy after ${ATTEMPTS}"
 		sleep "${HEALTH_INTERVAL_SECONDS}"
@@ -83,7 +93,7 @@ done
 
 if [ "${SUCCESS}" -ne 1 ]; then
 	echo "ERROR: Health check failed after ${MAX_HEALTH_ATTEMPTS} attempts." >&2
-	docker logs "${CONTAINER_NAME}" > /dev/null 2&>1
+	docker logs "${CONTAINER_NAME}" > /dev/null 2>&1
 	exit 1
 fi
 

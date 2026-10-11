@@ -1,0 +1,34 @@
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python(with pip caching)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run PyTest native test
+        run: pytest tests/ -v
+
+      - name: Build image and initiate the container
+        run: docker compose up --build -d
+
+      - name: Check container status
+        run: docker compose ps
+
+      - name: Stop Docker compose service
+        if: always()
+        run: docker compose down -v
