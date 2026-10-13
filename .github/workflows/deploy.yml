@@ -12,35 +12,35 @@ jobs:
 
     steps:
       - name: Checkout repository code
-      uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
-      - name: Set Up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
+      - name: "Set Up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest httpx
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx
 
       - name: Run PyTest Quality Tests
-      env:
-        AWS_ACCESS_KEY_ID: mock_key
-        AWS_SECRET_ACCESS_KEY: mock_secret
-        AWS_DEFAULT_REGION: us-east-1
-      run: pytest tests/test_main.py -vv
+        env:
+          AWS_ACCESS_KEY_ID: mock_key
+          AWS_SECRET_ACCESS_KEY: mock_secret
+          AWS_DEFAULT_REGION: us-east-1
+        run: pytest tests/test_main.py -vv
 
       - name: Install vercel CLI
-      run: npm install --global vercel@latest
+        run: npm install --global vercel@latest
 
       - name: Pull Vercel Environment Information
-      env:
-        VERCEL_TOKEN = ${{ secrets.VERCEL_TOKEN }}
-        VERCEL_ORG_ID = ${{ secrets.VERCEL_ORG_ID }}
-        VERCEL_PROJECT_ID = ${{ secrets.VERCEL_PROJECT_ID }}
-      run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build Project Artifacts
         env:
