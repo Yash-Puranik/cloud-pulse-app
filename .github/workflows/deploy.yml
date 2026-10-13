@@ -35,16 +35,10 @@ jobs:
       - name: Install vercel CLI
         run: npm install --global vercel@latest
       
-      - name: Debug Secret Presence (Safe check)
-        run: |
-          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
-            echo "CRITICAL: VERCEL_TOKEN secret is EMPTY or NOT FOUND in GitHub Secrets!"
-            exit 1
-          else
-            echo "SUCCESS: VERCEL_TOKEN is populated (length: ${#TOKEN} chars)."
-          fi
-        env:
-          TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      - name: Install uv (Required by Vercel Python Builder)
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
       
       - name: Pull Vercel Environment Information
         env:
@@ -52,6 +46,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
       - name: Build Project Artifacts
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -66,3 +61,4 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
