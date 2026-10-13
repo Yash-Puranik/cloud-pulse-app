@@ -1,42 +1,74 @@
-.git/
+# ==============================================================================
+# Git Metadata
+# ==============================================================================
+.git
 .gitignore
 .gitattributes
-.github/
-.gitlab-ci.yml
-.venv/
-venv/
-env/
-ENV/
-build/
-dist/
-*.egg-info/
-__pycache__/
-*.py[cod]
-*$py.class
-.mypy_cache/
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
+
+# ==============================================================================
+# CI/CD Workflows & Documentation
+# ==============================================================================
+.github
+.gitlab
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+docs/
+*.md
+
+# ==============================================================================
+# Local Secrets & Configuration Overrides
+# ==============================================================================
 .env
 .env.*
 !.env.example
 *.pem
 *.key
+*.crt
 id_rsa
-id_rsa.pub
-.aws/
-.vscode/
-.idea/
-*.swp
-*.swo
+id_ed25519
+credentials
+secrets.*
+
+# ==============================================================================
+# Host Virtual Environments & Node Packages (MUST BE BUILT IN CONTAINER)
+# ==============================================================================
+.venv
+venv
+env
+node_modules
+
+# ==============================================================================
+# Build Caches & Test Results
+# ==============================================================================
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov
+.mypy_cache
+.ruff_cache
+dist
+build
+*.egg-info
+
+# ==============================================================================
+# Editor & OS Metadata
+# ==============================================================================
+.idea
+.vscode
 .DS_Store
 Thumbs.db
-tests/
-scripts/
-docs/
-README.md
-*.md
-docker-compose*.yml
-compose*.yaml
+*.swp
+*.swo
+
+# ==============================================================================
+# Docker & Deployment Files
+# ==============================================================================
 Dockerfile*
+docker-compose*.yml
+.dockerignore
+.vercel
+.terraform

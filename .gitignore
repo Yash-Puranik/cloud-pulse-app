@@ -1,11 +1,42 @@
 # ==============================================================================
-# Python Runtime, Compilers & Bytecode
+# Environment & Secrets (CRITICAL SECURITY)
+# ==============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+id_rsa
+id_ed25519
+credentials
+secrets.yml
+secrets.json
+
+# ==============================================================================
+# Operating System & Editor Artifacts
+# ==============================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ==============================================================================
+# Python Artifacts & Virtual Environments
 # ==============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+env/
+venv/
+.venv/
+ENV/
 build/
 develop-eggs/
 dist/
@@ -18,62 +49,54 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# ==============================================================================
-# Python Virtual Environments (Local Only)
-# ==============================================================================
-.venv/
-venv/
-ENV/
-env/
-env.bak/
-venv.bak/
-
-# ==============================================================================
-# Testing, Coverage & Quality Assurance Caches
-# ==============================================================================
 .pytest_cache/
 .coverage
-.coverage.*
 htmlcov/
-.tox/
-.nox/
-.hypothesis/
 .mypy_cache/
 .ruff_cache/
 
 # ==============================================================================
-# Sensitive Secrets, Environment Files & Keys (SECURITY CRITICAL)
+# Node.js & Web Assets
 # ==============================================================================
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-id_rsa
-id_rsa.pub
-.aws/
-
-# ==============================================================================
-# IDEs & Developer Operating System Artifacts
-# ==============================================================================
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# ==============================================================================
-# Temporary Logs & Debug Files
-# ==============================================================================
-*.log
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
+.next/
+out/
+
+# ==============================================================================
+# Terraform & Cloud Infrastructure
+# ==============================================================================
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# ==============================================================================
+# Cloud & Platform Specific (AWS / Serverless / Vercel)
+# ==============================================================================
+.aws/
+.vercel/
+.serverless/
+
+# ==============================================================================
+# Logs & Databases
+# ==============================================================================
+*.log
+*.sqlite
+*.sqlite3
+*.db
